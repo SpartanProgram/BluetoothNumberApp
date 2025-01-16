@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bluetooth Number Sender</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+        button {
+            padding: 20px;
+            font-size: 18px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:disabled {
+            background-color: #ccc;
+        }
+        .status {
+            margin-top: 20px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Send Number to Bluetooth</h1>
+    <div class="buttons">
+        <button onclick="sendNumber(0)">0</button>
+        <button onclick="sendNumber(1)">1</button>
+        <button onclick="sendNumber(2)">2</button>
+        <button onclick="sendNumber(3)">3</button>
+        <button onclick="sendNumber(4)">4</button>
+        <button onclick="sendNumber(5)">5</button>
+        <button onclick="sendNumber(6)">6</button>
+        <button onclick="sendNumber(7)">7</button>
+        <button onclick="sendNumber(8)">8</button>
+        <button onclick="sendNumber(9)">9</button>
+    </div>
+    <div class="status">
+        <p id="status">Status: Waiting for connection...</p>
+    </div>
+
+    <script>
+        let bluetoothDevice;
+        let bluetoothCharacteristic;
+
+        // Request Bluetooth device (HC-05) and connect
+        async function requestBluetoothDevice() {
+            try {
+                // Request the Bluetooth device
+                bluetoothDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{ services: ['battery_service'] }]  // Specify service
+                });
+
+                // Connect to the device
+                const server = await bluetoothDevice.gatt.connect();
+                const service = await server.getPrimaryService('battery_service');
+                bluetoothCharacteristic = await service.getCharacteristic('battery_level');
+
+                // Update status
+                document.getElementById('status').textContent = "Status: Connected!";
+            } catch (error) {
+                console.error(error);
+                document.getElementById('status').textContent = "Status: Error connecting to Bluetooth device.";
+            }
+        }
+
+        // Send number to the HC-05 Bluetooth module
+        async function sendNumber(number) {
+            if (!bluetoothDevice) {
+                alert("Please connect to the Bluetooth device first!");
+                return;
+            }
+
+            try {
+                // Send the number to the HC-05 (you may need to adjust the service and characteristic UUID)
+                const encoder = new TextEncoder();
+                const value = encoder.encode(number.toString());
+                await bluetoothCharacteristic.writeValue(value);
+
+                // Update status
+                document.getElementById('status').textContent = `Status: Sent number ${number}`;
+            } catch (error) {
+                console.error(error);
+                document.getElementById('status').textContent = "Status: Error sending data.";
+            }
+        }
+
+        // Initiate Bluetooth connection when the page loads
+        window.onload = () => {
+            requestBluetoothDevice();
+        };
+    </script>
+</body>
+</html>
