@@ -35,6 +35,7 @@
 </head>
 <body>
     <h1>Send Number to Bluetooth</h1>
+    <button onclick="connectBluetooth()">Connect to Bluetooth</button>
     <div class="buttons">
         <button onclick="sendNumber(0)">0</button>
         <button onclick="sendNumber(1)">1</button>
@@ -55,52 +56,47 @@
         let bluetoothDevice;
         let bluetoothCharacteristic;
 
-        // Request Bluetooth device (HC-05) and connect
-        async function requestBluetoothDevice() {
+        // Connect to the Bluetooth device
+        async function connectBluetooth() {
             try {
                 // Request the Bluetooth device
                 bluetoothDevice = await navigator.bluetooth.requestDevice({
-                    filters: [{ services: ['battery_service'] }]  // Specify service
+                    acceptAllDevices: true, // HC-05 doesn't advertise specific services
+                    optionalServices: ['00001101-0000-1000-8000-00805f9b34fb'] // Default UUID for HC-05
                 });
 
                 // Connect to the device
                 const server = await bluetoothDevice.gatt.connect();
-                const service = await server.getPrimaryService('battery_service');
-                bluetoothCharacteristic = await service.getCharacteristic('battery_level');
+                const service = await server.getPrimaryService('00001101-0000-1000-8000-00805f9b34fb');
+                bluetoothCharacteristic = await service.getCharacteristic('00001101-0000-1000-8000-00805f9b34fb');
 
-                // Update status
-                document.getElementById('status').textContent = "Status: Connected!";
+                // Update connection status
+                document.getElementById('status').textContent = 'Status: Connected to Bluetooth!';
             } catch (error) {
                 console.error(error);
-                document.getElementById('status').textContent = "Status: Error connecting to Bluetooth device.";
+                document.getElementById('status').textContent = 'Status: Failed to connect to Bluetooth.';
             }
         }
 
-        // Send number to the HC-05 Bluetooth module
+        // Send a digit to the Bluetooth device
         async function sendNumber(number) {
-            if (!bluetoothDevice) {
-                alert("Please connect to the Bluetooth device first!");
+            if (!bluetoothCharacteristic) {
+                alert('Please connect to the Bluetooth device first!');
                 return;
             }
 
             try {
-                // Send the number to the HC-05 (you may need to adjust the service and characteristic UUID)
                 const encoder = new TextEncoder();
-                const value = encoder.encode(number.toString());
-                await bluetoothCharacteristic.writeValue(value);
+                const data = encoder.encode(number.toString()); // Convert the number to a string and encode it
+                await bluetoothCharacteristic.writeValue(data); // Send the data
 
                 // Update status
                 document.getElementById('status').textContent = `Status: Sent number ${number}`;
             } catch (error) {
                 console.error(error);
-                document.getElementById('status').textContent = "Status: Error sending data.";
+                document.getElementById('status').textContent = 'Status: Failed to send number.';
             }
         }
-
-        // Initiate Bluetooth connection when the page loads
-        window.onload = () => {
-            requestBluetoothDevice();
-        };
     </script>
 </body>
 </html>
